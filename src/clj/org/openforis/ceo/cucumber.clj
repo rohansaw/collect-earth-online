@@ -3,6 +3,7 @@
            [org.openqa.selenium.safari SafariDriver]
            [org.openqa.selenium.chrome ChromeDriver]
            [org.openqa.selenium.firefox FirefoxDriver]
+           [org.openqa.selenium JavascriptExecutor]
            [org.openqa.selenium.support.ui WebDriverWait ExpectedConditions]
            [java.time Duration])
   (:require [clojure.java.io :as io]
@@ -41,13 +42,21 @@
 (defn- safari-driver []
   (SafariDriver.))
 
+(defn step [driver & steps]
+  (let [wait (WebDriverWait. driver 10)]
+    (.until wait (presence-of (By/cssSelector "input.form-control")))
+    (.sendKeys (find-by-css driver "input.form-control") "derp")
+    (.click (find-by-css driver ".btn.btn-lightgreen"))))
+
 (defn run-cucumber-tests [driver]
   (println "Starting Webdriver")
   (println driver)
   (.get driver "https://collect.earth")
   (.. driver (manage) (window) (maximize)) ;; Maximize window
-  (send-keys (find-by-css driver "input.form-control") "FAO")
-  (println (find-by-css driver "ul.tree > li")))
+  (let [wait (WebDriverWait. driver 10)]
+    (.until wait (presence-of (By/cssSelector "input.form-control")))
+    (.click (find-by-css driver ".btn.btn-lightgreen.btn-sm"))
+    (step driver)))
 
 (defn -main [& args]
   (condp = (first args)
