@@ -1,36 +1,77 @@
 (ns org.openforis.ceo.cucumber.core
-  (:require [clojure.java.io :as io]
-            [clojure.string :as s]
-            [org.openforis.ceo.cucumber.webdriver :as w]
-            [org.openforis.ceo.cucumber.steps :refer [find-step]])
-  (:import [java.io File FilenameFilter]))
+  (:require [clojure.string :as s]
+            [clojure.tools.cli  :refer [parse-opts]]
+            [org.openforis.ceo.cucumber.runner :as r]))
 
-(def path-env (System/getenv "PATH"))
 
-(defn- read-steps [^File feature]
-  (let [feature-name (.getName feature)
-        lines (->> feature slurp s/split-lines (map s/trim))
-        steps (map find-step lines)]
-    {:feature feature-name :steps steps}))
+(def ^:private valid-options
+  {:systems #{"Windows" "OS X" "android" "ios"}
+   :browsers #{"android" "chrome" "edge" "firefox" "ie" "ipad" "iphone" "opera" "safari"}})
 
-(defn- run-feature-steps [context features]
-  (doseq [feature features]
-    (doseq [{:keys [step-name fun]} (:steps feature)]
-      (println step-name)
-      (try (fun context)
-           (catch Exception e (str "Error in " step-name ", caught exception: " (.getMessage e)))))))
+(def cli-options
+  [["-b" "--browser BROWSER" "Browser to test, default 'chrome'"
+    :id :browser
+    :default "chrome"
+    :parse-fn #(s/lower-case %)
+    :validate [#(contains? (:browsers valid-options) %) (str "Must be one of: " (:browsers valid-options))]]
+   ["-r" "--remote" "Run using a remote driver"]
+   [nil "--browser-version BROWSER VERSION" "Browser version to test in Remote Driver (-r), defaults to '88.0'"
+    :id :browser-version
+    :default "88.0"
+    :validate [string? "Must be a string"]]
+   ["-s" "--system OPERATING SYSTEM" "System to use in Remote Driver (-r), defaults to 'windows'"
+    :id :system
+    :default "Windows"
+    :validate [#(contains? (:systems valid-options) %) (str "Must be one of: " (:systems valid-options))]]
+   [nil "--system-version SYSTEM VERSION" "System Version to use in Remote Driver (-r), defaults to 10"
+    :id :system-version
+    :default "10"
+    :validate [#(string? %) "Must be a string"]]
+   ["-t" "--test-name TEST NAME" "Browserstack test name to use in Remote Driver (-r)"
+    :id :test-name
+    :validate [#(string? %) "Must be a string"]]
+   ["-u" "--username USERNAME" "Browserstack Username to use in Remote Driver (-r), defaults to environment variable 'BS_USERNAME'"
+    :id :username
+    :parse-fn #(or % (System/getenv "BS_USERNAME"))
+    :validate [#(string? %) "Must be a string"]]
+   ["-p" "--api-key API KEY" "Browserstack API Key to use in Remote Driver (-r), defaults to environment variable 'BS_API_KEY'"
+    :id :api-key
+    :parse-fn #(or % (System/getenv "BS_API_KEY"))
+    :validate [#(string? %) "Must be a string"]]
+   ["-o" "--output-dir DIR" "Output directory for log files. When a directory is not provided, output will be to stdout."
+    :id :output
+    :default ""]
+   ["-h" "--help"]])
 
-(defn run-cucumber-tests [driver]
-  (let [features-dir (io/file "./features")
-        feature-files (seq (.listFiles features-dir))
-        features (map #(read-steps %) feature-files)
-        context {:driver driver}]
-    (run-feature-steps context features)))
+(defn usage [options-summary]
+  (->> ["Runs automated BDD-style tests in the browser"
+        ""
+        "Usage: clj -M:cucumber [options]"
+        ""
+        "Options:"
+        options-summary] (s/join \newline)))
+
+(defn error-msg [errors]
+  (str "The following errors occured while parsing your command:\n\n"
+       (s/join \newline errors)))
+
+(defn validate-args [args]
+  (let [{:keys [options summary errors]} (parse-opts args cli-options)]
+    (cond
+      (:help options) {:exit-message (usage summary) :ok? true}
+      errors {:exit-message (error-msg errors)}
+      (< 0 (count options)) {:options options}
+      :else {:exit-message (usage summary)})))
+
+(defn exit [status msg]
+  (println msg)
+  (System/exit status))
+
+(defn start-tests [opts]
+  (r/run-cucumber-tests opts))
 
 (defn -main [& args]
-  (condp = (first args)
-    "chrome" (run-cucumber-tests (w/chrome-driver))
-    "firefox" (run-cucumber-tests (w/firefox-driver))
-    "safari" (run-cucumber-tests (w/safari-driver))
-    "remote" (run-cucumber-tests (w/safari-driver))
-    (println "Valid options are:\n  (firefox|chrome|safari)")))
+  (let [{:keys [options exit-message ok?]} (validate-args args)]
+    (if exit-message
+      (exit (if ok? 0 1) exit-message)
+      (start-tests options))))

@@ -2,14 +2,14 @@
   (:import [org.openqa.selenium.remote RemoteWebDriver DesiredCapabilities]
            [java.net URL]))
 
-
-(defn- capabilities [{:keys [os os-version browser browser-version test-name]}]
+;; See https://automate.browserstack.com/dashboard/v2/getting-started
+(defn- capabilities [{:keys [system system-version browser browser-version test-name]}]
   (let [caps (DesiredCapabilities.)]
-    (.setCapability caps "os" os)
-    (.setCapability caps "os-version" os-version)
+    (.setCapability caps "os" system)
+    (.setCapability caps "os_version" system-version)
     (.setCapability caps "browser" browser)
-    (.setCapability caps "browser-version" browser-version)
-    (.setCapability caps "test-name" test-name)
+    (.setCapability caps "browser_version" browser-version)
+    (.setCapability caps "name" test-name)
     caps))
 
 (def ^:private browserstack-url "http://%s:%s@hub-cloud.browserstack.com/wd/hub")
