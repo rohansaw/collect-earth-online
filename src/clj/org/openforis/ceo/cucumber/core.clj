@@ -16,7 +16,7 @@
 (defn- run-feature-steps [context features]
   (doseq [feature features]
     (doseq [{:keys [step-name fun]} (:steps feature)]
-      (println step-name fun)
+      (println step-name)
       (try (fun context)
            (catch Exception e (str "Error in " step-name ", caught exception: " (.getMessage e)))))))
 
@@ -32,4 +32,5 @@
     "chrome" (run-cucumber-tests (w/chrome-driver))
     "firefox" (run-cucumber-tests (w/firefox-driver))
     "safari" (run-cucumber-tests (w/safari-driver))
+    "remote" (run-cucumber-tests (w/safari-driver))
     (println "Valid options are:\n  (firefox|chrome|safari)")))

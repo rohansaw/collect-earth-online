@@ -1,6 +1,8 @@
 (ns org.openforis.ceo.cucumber.steps
   (:require [org.openforis.ceo.cucumber.by :as by]
-            [org.openforis.ceo.cucumber.webdriver :as w]))
+            [org.openforis.ceo.cucumber.utils :as u]
+            [org.openforis.ceo.cucumber.webdriver :as w])
+  (:import [org.openqa.selenium Keys]))
 
 (def all-steps (atom []))
 
@@ -19,7 +21,7 @@
   (step-maker phrase f))
 
 (defn- unknown-def [step-name]
-  (fn [_]) (println "Could not find definition for: '" step-name "'"))
+  (fn [_] (println "Could not find definition for: '" step-name "'")))
 
 ;; Public
 (defn find-step [step-name]
@@ -30,17 +32,24 @@
 ;; Steps
 
 (Given "I am a visitor"
-      (fn [{:keys [driver]}] (println "Visitor" driver)))
-
-(When "I login"
-      (fn [_] (println "Logging in")))
-
-(Then "I can see my institutions"
-      (fn [_] (println "All the institutions")))
-
-(comment (When "I go to login"
       (fn [{:keys [driver]}]
+        (w/maximize driver)
+        (w/goto driver "https://collect.earth")
         (let [wait (w/wait driver 10)]
-          (.until wait (w/presence-of (by/css "input.form-control")))
-          (w/send-keys (by/css "input.form-control") "derp")
-          (w/click (w/find-el driver (by/css ".btn.btn-lightgreen")))))))
+          (.until wait (w/presence-of (by/css "input"))))))
+
+(When "I search for an institution"
+      (fn [{:keys [driver]}]
+        (let [input (w/find-el driver (by/css "input"))] ;; seconds
+          (w/click input)
+          (w/send-keys input "FAO"))))
+
+(Then "I can see matching institutions"
+      (fn [{:keys [driver]}]
+        (let [_ (w/wait driver 2)]
+          (u/sleep 2000)
+          (let [tree (w/find-el driver (by/css "ul.tree"))
+                institutions (w/find-els tree (by/css "li"))]
+            (println (map #(w/find-el % (by/css "div.d-flex")) (seq institutions)))
+            (println tree institutions)))))
+
