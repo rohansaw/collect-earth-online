@@ -16,7 +16,7 @@
 (defn- run-feature-steps [context features]
   (doseq [feature features]
     (doseq [{:keys [step-name fun]} (:steps feature)]
-      (println step-name)
+      (println step-name fun)
       (try (fun context)
            (catch Exception e (str "Error in " step-name ", caught exception: " (.getMessage e)))))))
 

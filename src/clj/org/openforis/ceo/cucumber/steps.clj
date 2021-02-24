@@ -7,28 +7,32 @@
 ;; Private
 
 (defn- step-maker [phrase f]
-  (swap! all-steps conj {:match phrase :steps f}))
+  (swap! all-steps conj {:match (re-pattern phrase) :fun f}))
 
 (defn- Given [phrase f]
-  (step-maker (re-pattern (str "^Given " phrase)) f))
+  (step-maker phrase f))
 
 (defn- When [phrase f]
-  (step-maker (re-pattern (str "^When " phrase)) f))
+  (step-maker phrase f))
 
 (defn- Then [phrase f]
-  (step-maker (re-pattern (str "^Then " phrase)) f))
+  (step-maker phrase f))
+
+(defn- unknown-def [step-name]
+  (fn [_]) (println "Could not find definition for: '" step-name "'"))
 
 ;; Public
 (defn find-step [step-name]
-  {:step-name step-name :fun (fn [_] (println "Hello World"))})
-  ;;(filter #(re-matches (:match %) step-definition) @all-steps)
+  (let [step-defs (filter #(re-find (:match %) step-name) @all-steps)
+        fun (-> (or (first step-defs) {}) (get :fun (unknown-def step-name)))]
+    {:step-name step-name :fun fun}))
 
 ;; Steps
 
-(Given "I am a Visitor"
-      (fn [_] (println "Visitor")))
+(Given "I am a visitor"
+      (fn [{:keys [driver]}] (println "Visitor" driver)))
 
-(When "When I login"
+(When "I login"
       (fn [_] (println "Logging in")))
 
 (Then "I can see my institutions"
