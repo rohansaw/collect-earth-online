@@ -3,7 +3,6 @@
             [clojure.tools.cli  :refer [parse-opts]]
             [org.openforis.ceo.cucumber.runner :as r]))
 
-
 (def ^:private valid-options
   {:systems #{"Windows" "OS X" "android" "ios"}
    :browsers #{"android" "chrome" "edge" "firefox" "ie" "ipad" "iphone" "opera" "safari"}})

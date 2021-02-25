@@ -18,10 +18,9 @@
 
 (defn- skip [])
 
-(defn- run-scenario [step-name fun {:keys [driver] :as context}]
+(defn- run-scenario [step-name {:keys [driver]}]
   (println (str "\t\t# " step-name)
-  (w/delete-cookies driver)
-  (fun context)))
+  (w/delete-cookies driver)))
 
 (defn- run-step [step fun context]
   (println (str "\t\t\t# " step))
@@ -38,12 +37,13 @@
     {:feature feature-name :secenarios scenarios :steps steps}))
 
 (defn- run-feature-steps [context features]
-  (doseq [feature features]
-    (doseq [{:keys [step-name fun]} (:steps feature)]
-      (if (or (empty? step-name) (comment? step-name)) (skip)
-        (if (feature? step-name) (println (str "\t# " step-name))
-          (if (scenario? step-name) (run-scenario step-name fun context)
-            (run-step step-name fun context)))))))
+  (doseq [feature features
+          {:keys [step-name fun]} (:steps feature)]
+    (cond
+      (or (empty? step-name) (comment? step-name)) (skip)
+      (feature? step-name) (println (str "\t# " step-name))
+      (scenario? step-name) (run-scenario step-name context)
+      :else (run-step step-name fun context))))
 
 (defn run-cucumber-tests [{:keys [output] :as opts}]
   (let [driver (w/driver opts)

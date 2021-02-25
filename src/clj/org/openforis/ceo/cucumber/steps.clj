@@ -70,7 +70,7 @@
 
 (When "I search for an institution"
       (fn [{:keys [driver]}]
-        (let [input (e/find-el driver (by/css "input"))] ;; seconds
+        (let [input (e/find-el driver (by/id "input"))] ;; seconds
           (e/click! input)
           (e/send-keys! input "FAO"))))
 
