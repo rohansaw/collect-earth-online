@@ -231,7 +231,7 @@ export class PlotDesign extends React.Component {
     try {
       shp(shpFile).then((g) => {
         this.context.setProjectDetails({
-          aoiDataDebug: g.features,
+          aoiProperties: g.features,
           aoiFeatures: g.features.map((f) => f.geometry),
           aoiFileName: g.fileName,
         });
@@ -271,7 +271,7 @@ export class PlotDesign extends React.Component {
     );
   };
 
-  renderAOISelector = () => {
+  renderAOISelector = (stratified = false) => {
     const { boundaryType } = this.context;
     const boundaryOptions = [
       { value: "manual", label: "Input coordinates" },
@@ -279,25 +279,44 @@ export class PlotDesign extends React.Component {
     ];
     return (
       <>
-        <div className="form-group" style={{ width: "fit-content" }}>
-          <label>Boundary type</label>
-          <select
-            className="form-control form-control-sm"
-            onChange={(e) => this.setPlotDetails({ boundaryType: e.target.value })}
-            value={boundaryType}
-          >
-            {boundaryOptions.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {boundaryType === "manual" ? this.renderAOICoords() : this.renderBoundaryFileInput()}
+        {stratified ? (
+          <>
+            <div className="form-group" style={{ width: "fit-content" }}>
+              <label>Boundary type</label>
+              <select
+                className="form-control form-control-sm"
+                value={boundaryOptions[1].value}
+              >
+                <option key={boundaryOptions[1].value} value={boundaryOptions[1].value}>
+                  {boundaryOptions[1].label}
+                </option>
+              </select>
+            </div>
+            {this.renderBoundaryFileInput()}
+          </>
+        ) : (
+          <>
+          <div className="form-group" style={{ width: "fit-content" }}>
+            <label>Boundary type</label>
+            <select
+              className="form-control form-control-sm"
+              onChange={(e) => this.setPlotDetails({ boundaryType: e.target.value })}
+              value={boundaryType}
+            >
+              {boundaryOptions.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+            {boundaryType === "manual" ? this.renderAOICoords() : this.renderBoundaryFileInput()}
+          </>
+        )}
       </>
     );
   };
-
+  
   checkPlotFile = (plotFileName, plotFileBase64) => {
     const { projectId, designSettings } = this.context;
     fetch("/check-plot-csv", {
@@ -394,13 +413,34 @@ export class PlotDesign extends React.Component {
         marginBottom: ".25rem",
       }}
     >
-      {`Strata ${idx + 1}: Area ${Math.round(mercator.calculateGeoJsonArea(feature))} ha`}
+      {`Strata ${feature.properties.STRATA_ID}: Area ${Math.round(mercator.calculateGeoJsonArea(feature.geometry))} ha`}
     </div>
   );
+
+  renderStratified = () => {
+    const { aoiFeatures, plotShape, aoiProperties } = this.context;
+    const plotUnits = plotShape === "circle" ? "Plot diameter (m)" : "Plot width (m)";
+    const strata =  aoiProperties ? aoiProperties.map((p) => p.properties.STRATA_ID) : [];
+    console.log(strata);
+    return (
+      <div>
+        {this.renderAOISelector(true)}
+        <label>Plot properties</label>
+        <div className="d-flex flex-column">
+          
+        </div>
+        {aoiProperties.map(this.renderStrataRow)}
+        <div className="d-flex">
+          {this.renderLabeledInput(plotUnits, "plotSize")}
+        </div>
+      </div>
+    );
+  }
 
   renderRandom = () => {
     const { aoiFeatures, plotShape } = this.context;
     const plotUnits = plotShape === "circle" ? "Plot diameter (m)" : "Plot width (m)";
+
     return (
       <div>
         {this.renderAOISelector()}
@@ -461,6 +501,12 @@ export class PlotDesign extends React.Component {
           "Specify your own plot boundaries by uploading a zipped Shapefile (containing SHP, SHX, DBF, and PRJ files) of polygon features. Each feature must have a unique PLOTID value.",
         layout: this.renderFileInput("shp"),
       },
+      stratified: {
+        display: "Stratified",
+        description: "Plots will be generated according to the Stratas present in the shape file uploaded in the 'Boundary Type' section. Properties STRATA_ID and SHAPE_AREA must be present for every feature in the shape file",
+        layout: this.renderStratified(),
+      },
+
     };
 
     return (
