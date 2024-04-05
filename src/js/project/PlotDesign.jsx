@@ -413,7 +413,7 @@ export class PlotDesign extends React.Component {
         marginBottom: ".25rem",
       }}
     >
-      {`Strata ${feature.properties.STRATA_ID}: Area ${Math.round(mercator.calculateGeoJsonArea(feature.geometry))} ha`}
+      {`Strata ${feature?.properties?.STRATA}: Area ${Math.round(mercator.calculateGeoJsonArea(feature.geometry))} ha`}
     </div>
   );
 
@@ -429,7 +429,7 @@ export class PlotDesign extends React.Component {
         <div className="d-flex flex-column">
           
         </div>
-        {aoiProperties.map(this.renderStrataRow)}
+        {aoiProperties?.map(this.renderStrataRow)}
         <div className="d-flex">
           {this.renderLabeledInput(plotUnits, "plotSize")}
         </div>
