@@ -130,10 +130,10 @@
   "scripts": {
     "build-db-all": "clojure -M:build-db build-all",
     "build-db-functions": "clojure -M:build-db functions",
-    "vite-dev": "npx vite build --mode dev --watch & npx vite serve dist/public",
+    "vite-dev": "npx vite build --mode dev --watch & npx vite serve dist/public --host",
     "vite-prod": "npx vite build",
     "preview": "vite preview",
-    "server-dev": "clojure -M:server start",
+    "server-dev": "clojure -M:server -p 8080 start",
     "server-prod": "clojure -M:production:server start",
     "lint-js": "find src/js -type f -exec ./node_modules/.bin/quick-lint-js --snarky {} +",
     "test": "vites",
